@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>UNO Family</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="profile-screen" class="screen">
+    <h1>UNO Family 🎮</h1>
+
+    <label>Твой никнейм (до 12 символов):</label>
+    <input type="text" id="nickname" maxlength="12" placeholder="Например: Макс" />
+
+    <label>Семейный тег:</label>
+    <select id="family-tag">
+      <option value="[игрок] 🎮">[игрок] 🎮</option>
+      <option value="[мама] ❤️">[мама] ❤️</option>
+      <option value="[папа] 👑">[папа] 👑</option>
+      <option value="[брат] ⚡">[брат] ⚡</option>
+      <option value="[бабушка] 👵🧁">[бабушка] 👵🧁</option>
+      <option value="[бро] 👊">[бро] 👊</option>
+      <option value="[друг] 🤝">[друг] 🤝</option>
+      <option value="[знакомый] 👀">[знакомый] 👀</option>
+    </select>
+
+    <label>Цвет никнейма:</label>
+    <input type="color" id="nickname-color" value="#FF5733" />
+
+    <div class="nickname-preview">
+      Превью: <span id="nickname-display">Макс</span>
+    </div>
+
+    <!-- Кнопка «Игровой пасс» в стиле UNO -->
+    <button id="pass-btn" class="uno-pass-btn">
+      <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+      </svg>
+      ИГРОВОЙ ПАСС
+    </button>
+
+    <!-- Окно наград (пока просто заглушка) -->
+    <div id="rewards-modal" class="modal">
+      <h3>Награды игрового пасса 🏆</h3>
+      <p>Здесь будут неоновые цвета для рубашек карт.</p>
+      <button id="close-rewards" class="close-btn">Закрыть</button>
+    </div>
+
+    <hr />
+
+    <button id="create-room-btn" class="main-btn">СОЗДАТЬ КОМНАТУ</button>
+
+    <div class="room-join">
+      <label>Войти по коду комнаты:</label>
+      <input type="text" id="room-code-input" placeholder="ROOM-123" />
+      <button id="join-room-btn" class="main-btn">ВОЙТИ</button>
+    </div>
+  </div>
+
+  <!-- Экран игры (пока пустой) -->
+  <div id="game-screen" class="screen hidden">
+    <h2>Игра UNO Family</h2>
+    <p>Скоро здесь будут карты и ходы.</p>
+    <button onclick="location.reload()" class="main-btn">Вернуться в меню</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+  </html>
