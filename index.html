@@ -1,70 +1,272 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>UNO Family</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UNO Portrait Fullscreen</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { 
+            font-family: 'Arial', sans-serif; 
+            background: #1a1a1a; 
+            color: white; 
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Окно блокировки (Полноэкранный режим) */
+        #fullscreen-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        .btn {
+            padding: 15px 35px; font-size: 20px; background: #ff4757;
+            color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold;
+            margin: 10px; transition: 0.2s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn.secondary { background: #1e90ff; }
+        .btn.green { background: #2ed573; }
+
+        /* Главное меню */
+        #lobby-menu {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            height: 100vh; width: 100vw; background: #2f3542; text-align: center;
+        }
+        .menu-block { display: flex; flex-direction: column; gap: 10px; margin-top: 25px; }
+        .pulse { animation: pulse-animation 1.5s infinite; font-size: 18px; color: #ffa502; margin-top: 20px; display: none; }
+        @keyframes pulse-animation { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+    </style>
 </head>
 <body>
 
-  <div id="profile-screen" class="screen">
-    <h1>UNO Family 🎮</h1>
+    <!-- 1. Экран блокировки -->
+    <div id="fullscreen-overlay">
+        <h2 style="margin-bottom: 20px; text-align: center; padding: 20px;">Для удобной игры разверните приложение на весь экран</h2>
+        <button class="btn" onclick="activateGameMode()">НА ВЕСЬ ЭКРАН 📱</button>
+    </div>
+    <style>
+        /* Вертикальное поле игры */
+        #game-table {
+            display: none; height: 100vh; width: 100vw;
+            grid-template-rows: auto 110px 1fr 140px;
+            padding: 10px; gap: 10px;
+        }
 
-    <label>Твой никнейм (до 12 символов):</label>
-    <input type="text" id="nickname" maxlength="12" placeholder="Например: Макс" />
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); padding: 8px 15px; border-radius: 8px; font-size: 14px; }
+        .turn-indicator { font-weight: bold; color: #2ed573; }
 
-    <label>Семейный тег:</label>
-    <select id="family-tag">
-      <option value="[игрок] 🎮">[игрок] 🎮</option>
-      <option value="[мама] ❤️">[мама] ❤️</option>
-      <option value="[папа] 👑">[папа] 👑</option>
-      <option value="[брат] ⚡">[брат] ⚡</option>
-      <option value="[бабушка] 👵🧁">[бабушка] 👵🧁</option>
-      <option value="[бро] 👊">[бро] 👊</option>
-      <option value="[друг] 🤝">[друг] 🤝</option>
-      <option value="[знакомый] 👀">[знакомый] 👀</option>
-    </select>
+        /* Зоны карт врага и игрока с автоматическим сужением */
+        .enemy-hand-zone { 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 110px; width: 100%; padding: 0 5px;
+        }
+        .player-hand { 
+            display: flex; justify-content: center; align-items: flex-end; 
+            padding-bottom: 10px; width: 100%; padding: 0 5px;
+        }
 
-    <label>Цвет никнейма:</label>
-    <input type="color" id="nickname-color" value="#FF5733" />
+        /* Общие адаптивные стили карт */
+        .card {
+            width: 60px; 
+            max-width: 14vw;
+            height: 90px; border-radius: 6px;
+            display: inline-flex; justify-content: center; align-items: center;
+            font-size: 22px; font-weight: bold; color: white; margin: 0 2px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 2px solid white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8); transition: transform 0.2s;
+            flex-shrink: 1;
+            min-width: 10px; 
+            overflow: hidden;
+        }
+        .card.red { background: #ff4757; }
+        .card.blue { background: #1e90ff; }
+        .card.green { background: #2ed573; }
+        .card.yellow { background: #ffa502; }
+        .card.back { background: #2f3542; border-color: #ffa502; font-size: 12px; }
+        
+        .player-hand .card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .player-hand .card:active { transform: translateY(-15px) scale(1.05); }
 
-    <div class="nickname-preview">
-      Превью: <span id="nickname-display">Макс</span>
+        /* Стол по центру */
+        .center-deck { display: flex; justify-content: center; align-items: center; gap: 40px; background: rgba(255,255,255,0.03); border-radius: 12px; }
+    </style>
+
+    <!-- Главное меню -->
+    <div id="lobby-menu">
+        <h1>UNO Mobile</h1>
+        <div class="menu-block" id="menu-controls">
+            <button class="btn green" onclick="startMode('online')">Играть по Wi-Fi 🌐</button>
+            <button class="btn secondary" onclick="startMode('bot')">Играть с ботом 🤖</button>
+        </div>
+        <div class="pulse" id="lobby-status">Поиск противников...</div>
     </div>
 
-    <!-- Кнопка «Игровой пасс» в стиле UNO -->
-    <button id="pass-btn" class="uno-pass-btn">
-      <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-      </svg>
-      ИГРОВОЙ ПАСС
-    </button>
+    <!-- Игровой вертикальный стол -->
+    <div id="game-table">
+        <div class="top-bar">
+            <div id="player-role">Вы: Игрок</div>
+            <div class="turn-indicator" id="turn-status">Ожидание...</div>
+        </div>
 
-    <!-- Окно наград (пока просто заглушка) -->
-    <div id="rewards-modal" class="modal">
-      <h3>Награды игрового пасса 🏆</h3>
-      <p>Здесь будут неоновые цвета для рубашек карт.</p>
-      <button id="close-rewards" class="close-btn">Закрыть</button>
+        <!-- Зона карт противника -->
+        <div class="enemy-hand-zone" id="enemy-hand"></div>
+
+        <!-- Стол с колодой и сбросом -->
+        <div class="center-deck">
+            <div class="card back" onclick="drawCard()">+1</div>
+            <div class="card" id="top-card"></div>
+        </div>
+
+        <!-- Карты в руке игрока -->
+        <div class="player-hand" id="my-hand"></div>
     </div>
+    <script>
+        const overlay = document.getElementById('fullscreen-overlay');
+        const lobbyMenu = document.getElementById('lobby-menu');
+        const gameTable = document.getElementById('game-table');
+        const statusEl = document.getElementById('lobby-status');
+        const controlsEl = document.getElementById('menu-controls');
 
-    <hr />
+        let gameMode = null;
+        let myId = 'p1';
+        let isMyTurn = false;
+        let ws = null;
+        let localState = null;
 
-    <button id="create-room-btn" class="main-btn">СОЗДАТЬ КОМНАТУ</button>
+        async function activateGameMode() {
+            try {
+                if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    await document.documentElement.webkitRequestFullscreen();
+                }
+                overlay.style.display = 'none';
+            } catch (err) { 
+                overlay.style.display = 'none'; 
+            }
+        }
 
-    <div class="room-join">
-      <label>Войти по коду комнаты:</label>
-      <input type="text" id="room-code-input" placeholder="ROOM-123" />
-      <button id="join-room-btn" class="main-btn">ВОЙТИ</button>
-    </div>
-  </div>
+        function checkFullscreenExit() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                overlay.style.display = 'flex';
+            }
+        }
+        document.addEventListener('fullscreenchange', checkFullscreenExit);
+        document.addEventListener('webkitfullscreenchange', checkFullscreenExit);
 
-  <!-- Экран игры (пока пустой) -->
-  <div id="game-screen" class="screen hidden">
-    <h2>Игра UNO Family</h2>
-    <p>Скоро здесь будут карты и ходы.</p>
-    <button onclick="location.reload()" class="main-btn">Вернуться в меню</button>
-  </div>
+        function startMode(mode) {
+            gameMode = mode;
+            controlsEl.style.display = 'none';
+            statusEl.style.display = 'block';
+            if (mode === 'online') { initOnlineGame(); } else { initBotGame(); }
+        }
 
-  <script src="script.js"></script>
+        // --- ЛОГИКА БОТА ---
+        function initBotGame() {
+            lobbyMenu.style.display = 'none'; gameTable.style.display = 'grid';
+            document.getElementById('player-role').innerText = "Вы: Игрок 1";
+            
+            const colors = ['red', 'blue', 'green', 'yellow'];
+            let deck = [];
+            colors.forEach(c => { for(let i=0; i<=9; i++) deck.push({color: c, value: i.toString()}); });
+            deck.sort(() => Math.random() - 0.5);
+
+            localState = { deck: deck, topCard: deck.pop(), p1Hand: [], botHand: [], currentTurn: 'p1' };
+            for(let i=0; i<7; i++) { localState.p1Hand.push(localState.deck.pop()); localState.botHand.push(localState.deck.pop()); }
+            renderBotState();
+        }
+
+        function renderBotState() {
+            isMyTurn = (localState.currentTurn === 'p1');
+            document.getElementById('turn-status').innerText = isMyTurn ? "Ваш ход!" : "Ход бота...";
+            document.getElementById('turn-status').style.color = isMyTurn ? "#2ed573" : "#ff4757";
+
+            const enemyHandEl = document.getElementById('enemy-hand'); enemyHandEl.innerHTML = '';
+            for(let i=0; i<localState.botHand.length; i++) {
+                const backCard = document.createElement('div'); backCard.className = 'card back'; backCard.innerText = 'UNO';
+                enemyHandEl.appendChild(backCard);
+            }
+            
+            const topEl = document.getElementById('top-card');
+            topEl.className = `card ${localState.topCard.color}`; topEl.innerText = localState.topCard.value;
+
+            const handEl = document.getElementById('my-hand'); handEl.innerHTML = '';
+            localState.p1Hand.forEach((card, index) => {
+                const el = document.createElement('div'); el.className = `card ${card.color}`; el.innerText = card.value;
+                el.onclick = () => {
+                    if(!isMyTurn) return;
+                    if(card.color === localState.topCard.color || card.value === localState.topCard.value) {
+                        localState.topCard = card; localState.p1Hand.splice(index, 1);
+                        
+                        if(localState.p1Hand.length === 0) return alert("Вы победили!");
+                        
+                        localState.currentTurn = 'bot'; renderBotState(); setTimeout(botAction, 1200);
+                    }
+                };
+                handEl.appendChild(el);
+            });
+        }
+
+        function botAction() {
+            let cardIndex = localState.botHand.findIndex(c => c.color === localState.topCard.color || c.value === localState.topCard.value);
+            if(cardIndex !== -1) {
+                localState.topCard = localState.botHand[cardIndex]; localState.botHand.splice(cardIndex, 1);
+                if(localState.botHand.length === 0) return alert("Бот победил!");
+            } else {
+                localState.botHand.push(localState.deck.pop());
+            }
+            localState.currentTurn = 'p1'; renderBotState();
+        }
+
+        // --- СЕТЕВОЙ РЕЖИМ ---
+        function initOnlineGame() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}`);
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'search_status') statusEl.innerText = data.message;
+                if (data.type === 'game_start') {
+                    lobbyMenu.style.display = 'none'; gameTable.style.display = 'grid';
+                    myId = data.role; document.getElementById('player-role').innerText = `Вы: ${myId === 'p1' ? 'Игрок 1' : 'Игрок 2'}`;
+                    renderOnlineState(data.state);
+                }
+                if (data.type === 'game_update') renderOnlineState(data.state);
+            };
+        }
+
+        function renderOnlineState(state) {
+            isMyTurn = (state.currentTurn === myId);
+            document.getElementById('turn-status').innerText = isMyTurn ? "Ваш ход!" : "Ход противника...";
+            document.getElementById('turn-status').style.color = isMyTurn ? "#2ed573" : "#ff4757";
+
+            const enemyCount = state.hands[myId === 'p1' ? 'p2' : 'p1'];
+            const enemyHandEl = document.getElementById('enemy-hand'); enemyHandEl.innerHTML = '';
+            for(let i=0; i<enemyCount; i++) {
+                const backCard = document.createElement('div'); backCard.className = 'card back'; backCard.innerText = 'UNO';
+                enemyHandEl.appendChild(backCard);
+            }
+            
+            const topEl = document.getElementById('top-card');
+            topEl.className = `card ${state.topCard.color}`; topEl.innerText = state.topCard.value;
+
+            const handEl = document.getElementById('my-hand'); handEl.innerHTML = '';
+            state.myHandCards.forEach((card, index) => {
+                const el = document.createElement('div'); el.className = `card ${card.color}`; el.innerText = card.value;
+                el.onclick = () => { if(isMyTurn) ws.send(JSON.stringify({ type: 'play_card', cardIndex: index })); };
+                handEl.appendChild(el);
+            });
+        }
+
+        function drawCard() {
+            if (!isMyTurn) return;
+            if (gameMode === 'online') { ws.send(JSON.stringify({ type: 'draw_card' })); } 
+            else { localState.p1Hand.push(localState.deck.pop()); localState.currentTurn = 'bot'; renderBotState(); setTimeout(botAction, 1200); }
+        }
+    </script>
 </body>
-  </html>
+</html>
